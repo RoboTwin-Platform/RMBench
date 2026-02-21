@@ -1,7 +1,7 @@
 <h1 align="center">RMBench</h1>
 
 RMBench: Memory-Dependent Robotic Manipulation Benchmark with Insights into Policy Design<br>
-[arXiv]() | [website](https://rmbench.github.io/) | [PDF]()
+[PDF (pre-release)](https://github.com/RMBench/RMBench.github.io/blob/main/pre_release_version.pdf). The official release is coming Soon.
 
 > This project is built upon [RoboTwin 2.0](https://github.com/robotwin-Platform/RoboTwin), and you can seamlessly transfer your policy code between the two projects.
 
