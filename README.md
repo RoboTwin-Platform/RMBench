@@ -1,6 +1,6 @@
 <h1 align="center">RMBench: Memory-Dependent Manipulation Benchmark</h1>
 
-RMBench: Memory-Dependent Robotic Manipulation Benchmark with Insights into Policy Design. <i>Under Review</i>, [PDF](https://github.com/RMBench/RMBench.github.io/blob/main/pre_release_version.pdf) | [arXiv](https://arxiv.org/abs/2603.01229) | [website](https://rmbench.github.io/)
+RMBench: Memory-Dependent Robotic Manipulation Benchmark with Insights into Policy Design. <i>Under Review</i>, [PDF](https://arxiv.org/pdf/2603.01229) | [arXiv](https://arxiv.org/abs/2603.01229) | [website](https://rmbench.github.io/)
 
 > Tianxing Chen*, Yuran Wang*, Mingleyang Li*, Yan Qin*, Hao Shi, Zixuan Li, Yifan Hu, Yingsheng Zhang, Kaixuan Wang, Yue Chen, Hongcheng Wang, Renjing Xu, Ruihai Wu, Yao Mu, Yaodong Yang, Hao Dong†, Ping Luo†
 
