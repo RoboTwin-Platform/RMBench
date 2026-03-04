@@ -35,7 +35,7 @@ To download the assets, run the following command. If you encounter any rate-lim
 bash script/_download_assets.sh
 ```
 
-## 3. Download 
+## 3. Download Data
 
 Please run the following command to download all data.
 
