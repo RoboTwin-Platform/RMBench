@@ -262,3 +262,13 @@ bash eval.sh
 ```
 
 Simply run `eval.sh`. We provide an example in `eval.sh` with the main parameters from `deploy_policy.yml` that may need to be replaced. You can quickly start the test by adjusting the parameters in `eval.sh`.
+
+## GPU Resource Requirements
+
+As for **Planning Module**, training is conducted on **8 NVIDIA A800 GPUs** and the duration of training for a single task is approximately **half an hour**.
+
+The **Execution Module** of Mem-0 utilizes a single-task training strategy, where the model is trained from scratch for each specific task. Training is conducted on **8 NVIDIA A800** GPUs with a global batch size of 448 (56 batch size each) over 30K iterations. The duration of training for a single task is approximately **18 hours**.
+
+During training, we set the batch size to the largest value that fully utilizes the **80 GB GPU memory of the A800**. Users can adjust the batch size according to the memory capacity of their available GPUs.
+
+During inference, the Planning Module runs on a dedicated server and is invoked via a vLLM client–server interface. The **Simulation + Execution Module** of Mem-0 requires approximately **12–15 GB of GPU memory**. When the **Execution Module is** executed independently, the GPU memory consumption is reduced to approximately **7–10 GB**.
