@@ -251,17 +251,22 @@ First, place the trained weights in the `./checkpoints` folder.
 
 ### 1. Normalization
 
-After modifying the `repo_id` related information in the `__main__` section of `dataloader/dataset_min_max.py`, run the script to generate the `norm_stats` for the corresponding dataset. The save path is `Mem-0/assets/task_name/norm_stats.json`.
+After modifying the `repo_id` related information in the `__main__` section of `dataloader/dataset_min_max.py`, run the script to generate the `norm_stats` for the corresponding dataset. The save path is `Mem-0/assets/<task_name>/norm_stats.json`.
 
 We also support other normalization methods. You just need to use the corresponding `dataloader` and then modify `NORM_WAY` in `deploy_policy.py`.
 
 ### 2. Start Evaluation
 
+Because there are some difference between M1 and Mn (such as instruction and the needness of planner .. ), you should look at `deploy_policy.py/eval` and:
+
+- If there are M1 tasks, you should follow the in-code comment inside the `if model.is_init == 0:` block: comment out the two lines marked "For Mn Tasks" (the planner call), and instead uncomment and fill in the two lines below them to set the instruction and init the video recorder directly.
+- If there are Mn tasks, no changes are needed.
+
+Now simply run `eval.sh`! We provide an example in `eval.sh` with the main parameters from `deploy_policy.yml` that may need to be replaced. You can quickly start the test by adjusting the parameters in `eval.sh`.
+
 ```
 bash eval.sh
 ```
-
-Simply run `eval.sh`. We provide an example in `eval.sh` with the main parameters from `deploy_policy.yml` that may need to be replaced. You can quickly start the test by adjusting the parameters in `eval.sh`.
 
 ## GPU Resource Requirements
 

@@ -47,8 +47,9 @@ class MemoryMattersAgent:
         self.action_count = 0
        
         self.high_model = MemoryMattersPlanner (
-            config = OmegaConf.load (self.config.get ("high_config_path", "")),
-            global_task = self.config.get ("global_task", "")
+            config = OmegaConf.load (self.config.get ("planning_module_config_path", "")),
+            global_task = self.config.get ("global_task", ""),
+            vllm_url = self.config.get ("vllm_url", ""),
         )
         cprint (f"global_task = {self.config.get ('global_task', '')}", "red")  
         
@@ -210,8 +211,9 @@ class MemoryMattersAgent:
         self._time_action_history = {}
         
         self.high_model = MemoryMattersPlanner (
-            config = OmegaConf.load (self.config.get ("high_config_path", "")),
-            global_task = self.config.get ("global_task", "")
+            config = OmegaConf.load (self.config.get ("planning_module_config_path", "")),
+            global_task = self.config.get ("global_task", ""),
+            vllm_url = self.config.get ("vllm_url", ""),
         )
         
         # reset tmp video folder

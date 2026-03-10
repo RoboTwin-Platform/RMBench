@@ -24,7 +24,7 @@ from .scripts.normlization import denormalize_arms, load_stats, normalize_arms
 from .source.agent import MemoryMattersAgent
 
 # Normalization method
-NORM_WAY = "quantile"  # options: "quantile", "minmax", "meanstd"
+NORM_WAY = "minmax"  # options: "quantile", "minmax", "meanstd"
 
 # Runtime knobs filled by get_model, read inside encode_obs
 _RUNTIME_SETTINGS: Dict[str, object] = {
@@ -260,11 +260,16 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
         TASK_ENV.keyframes_ffmpeg.stdin.write(TASK_ENV.now_obs["third_view_rgb"].tobytes())
         image = TASK_ENV.now_obs["observation"]["head_camera"]["rgb"]
         Image.fromarray (image).save ("./_tmp_visual/init.png")
-        model.init_high_with_image ()
-        instruction = model.instruction
-    
-    # For M1 Tasks, you need to replace the instruction with the correspond subtask's global instruction.        
         
+        # --- For Mn Tasks: use planner to get the first subtask instruction
+        model.init_high_with_image ()
+        # --- The End
+        
+        # --- For M1 Tasks: comment out the 2 lines above and instead set instruction directly:
+        # model.instruction = "global instruction for the task"  # TODO: replace with actual instruction
+        # model._set_video_ffmpeg()
+        # --- The End
+
     instruction = model.instruction
     observation["instruction"] = instruction
     encoded_obs = encode_obs(observation)
@@ -295,14 +300,14 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
         
         sub_end_flag = model.update_obs(encoded_obs)
         
-        # For Mn Tasks
+        # --- For Mn Tasks
         if sub_end_flag == 1:
             cprint (f"[deploy] subtask end signal += 1 on [{model.iter}]", "yellow") 
         if model.end_signal_count >= model.threshold:
             image = TASK_ENV.now_obs["observation"]["head_camera"]["rgb"]
             Image.fromarray (image).save (f"./_tmp_visual/image_{model.stage}.png")
             break
-        # --- End For Mn Tasks
+        # --- The End
     
     # --- For Mn Tasks
     if model.end_signal_count >= model.threshold:
@@ -318,7 +323,7 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
          
         model.ffmpeg.stdin.write (TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes ())
         instruction = model.instruction
-    # --- End For Mn Tasks
+    # --- The End
 
 def reset_model(model: Optional[MemoryMattersAgent] = None):
     """Clear memory at the beginning of every episode."""

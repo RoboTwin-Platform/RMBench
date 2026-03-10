@@ -13,7 +13,9 @@ image_size: [224, 224]
 execution_ckpt: ./policy/Mem-0/checkpoints/x.pt # TODO
 state_stats_path: ./policy/Mem-0/assets/x/norm_stats.json # TODO
 
-high_config_path: ./policy/Mem-0/source/config/planning_module_inference.yaml
+planning_module_config_path: ./policy/Mem-0/source/config/planning_module_inference.yaml
+vllm_url: http://localhost:8000 # TODO
+
 action_horizon: 30
 threshold: 2
 global_task: null
