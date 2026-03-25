@@ -18,9 +18,9 @@ from omegaconf import OmegaConf
 from termcolor import cprint
 from PIL import Image
 
-from .scripts.image_utils import to_pil
-from .scripts.layout_utils import env_to_model_layout, model_to_env_layout
-from .scripts.normlization import denormalize_arms, load_stats, normalize_arms
+from .scripts.tools_for_deploy.image_utils import to_pil
+from .scripts.tools_for_deploy.layout_utils import env_to_model_layout, model_to_env_layout
+from .scripts.tools_for_deploy.normlization import denormalize_arms, load_stats, normalize_arms
 from .source.agent import MemoryMattersAgent
 
 # Normalization method
@@ -70,8 +70,9 @@ def _extract_state(observation: dict) -> np.ndarray:
         joint_arr = padded
         
         global PADDING_HAPPEND
+        if PADDING_HAPPEND == 0:
+            cprint("[deploy] joint vector padded to 16 dims", "yellow")
         PADDING_HAPPEND = 1 # indicate padding happened
-        cprint("[deploy] joint vector padded to 16 dims", "yellow")
         
     elif joint_arr.size > 16:
         joint_arr = joint_arr[:16]
@@ -257,7 +258,6 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
     """
     if model.is_init == 0:
         model.is_init = 1
-        TASK_ENV.keyframes_ffmpeg.stdin.write(TASK_ENV.now_obs["third_view_rgb"].tobytes())
         image = TASK_ENV.now_obs["observation"]["head_camera"]["rgb"]
         Image.fromarray (image).save ("./_tmp_visual/init.png")
         

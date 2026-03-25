@@ -21,7 +21,7 @@ class MemoryMattersPlanner(nn.Module):
     def __init__(self, 
         config: Optional[dict] = None, 
         device: Optional[torch.device] = None, 
-        vllm_url: str,
+        vllm_url: str = "http://localhost:8000",
         global_task: str = None,
         **kwargs):
         """
