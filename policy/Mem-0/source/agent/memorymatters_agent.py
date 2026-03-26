@@ -24,6 +24,13 @@ class MemoryMattersAgent:
     def __init__(self, cfg: OmegaConf, ckpt_path: str, device: torch.device):
         self.config = cfg
         
+        self.task_type = "Mn"
+        task_name = self.config.get("task_name", "unknown_task")
+        if task_name in ["swap_blocks", "swap_T", "observe_and_pickup", "put_back_block", "rearrange_blocks"]:
+            self.task_type = "M1"
+        cprint (f"task name: {task_name}", "red")
+        cprint (f"task type: {self.task_type}", "red")
+        
         self.device = device
         self.episode_id = 0
         self.is_init = 0

@@ -7,11 +7,22 @@ echo -e "\033[33mGPU to use: 0\033[0m"
 
 cd ../..  # move to project root
 
+# Example command, you can change the arguments as needed
+
 PYTHONWARNINGS=ignore::UserWarning \
 python script/eval_policy.py --config policy/${policy_name}/deploy_policy.yml --overrides \
-    --task_name # TODO
-    --execution_ckpt # TODO: path to checkpoint
-    --state_stats_path ./policy/Mem-0/assets/x/norm_stats.json # TODO: replace x with correct path
-    --global_task "..." # For Mn Tasks
-    --vllm_url http:// # For Mn Tasks: replace with correct URL; not needed for M1 Tasks
+    --task_name swap_blocks \
+    --execution_ckpt ./policy/Mem-0/checkpoints/model.pt \
+    --state_stats_path ./policy/Mem-0/assets/model/norm_stats.json \
+    --global_task "There are three traies on the table, and two blocks are placed in two different traies. You may move only one block at a time, and each tray can hold at most one block. Swap the positions of the two blocks. Finally press the button." \
+    --vllm_url "http://localhost:8000" \
+    --action_horizon 30 # Changeable
+
+PYTHONWARNINGS=ignore::UserWarning \
+python script/eval_policy.py --config policy/${policy_name}/deploy_policy.yml --overrides \
+    --task_name cover_blocks \
+    --execution_ckpt ./policy/Mem-0/checkpoints/model.pt \
+    --state_stats_path ./policy/Mem-0/assets/model/norm_stats.json \
+    --global_task "On the table, red, green, and blue blocks are arranged randomly along with three lids. From the current viewpoint, cover the blocks from left to right using the lids, and then uncover them again in the sequence red, green, and blue." \
+    --vllm_url "http://localhost:8000" \
     --action_horizon 30 # Changeable

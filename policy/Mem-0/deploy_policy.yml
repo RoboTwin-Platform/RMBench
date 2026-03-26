@@ -17,7 +17,7 @@ planning_module_config_path: ./policy/Mem-0/source/config/planning_module_infere
 vllm_url: http://localhost:8000 # TODO
 
 action_horizon: 30
-threshold: 2
+threshold: 2 # when subtask end signal count reaches this value, we consider the subtask ended and move to the next one
 global_task: null
 
 execution_module:

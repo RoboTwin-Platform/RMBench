@@ -262,12 +262,14 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
         Image.fromarray (image).save ("./_tmp_visual/init.png")
         
         # --- For Mn Tasks: use planner to get the first subtask instruction
-        model.init_high_with_image ()
+        if model.task_type == "Mn":
+            model.init_high_with_image ()
         # --- The End
         
         # --- For M1 Tasks: comment out the 2 lines above and instead set instruction directly:
-        # model.instruction = "global instruction for the task"  # TODO: replace with actual instruction
-        # model._set_video_ffmpeg()
+        if model.task_type == "M1":
+            model.instruction = model.config.get ("global_task", "")
+            model._set_video_ffmpeg()
         # --- The End
 
     instruction = model.instruction
@@ -282,9 +284,7 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
         cprint("[deploy] no actions produced", "red")
         raise SystemExit("Empty actions from model; aborting eval.")
     else:
-        model.accumulate_actions_chunk(result["normalized_actions"])  # updates internal time-indexed history
-        smoothed_model_actions = model.get_smoothed_actions(model.iter, model.action_strip)
-        actions = _postprocess_action_chunk(smoothed_model_actions)
+        actions = _postprocess_action_chunk(result["normalized_actions"])
     
     model.ffmpeg.stdin.write(TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes())
     
@@ -301,28 +301,30 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
         sub_end_flag = model.update_obs(encoded_obs)
         
         # --- For Mn Tasks
-        if sub_end_flag == 1:
-            cprint (f"[deploy] subtask end signal += 1 on [{model.iter}]", "yellow") 
-        if model.end_signal_count >= model.threshold:
-            image = TASK_ENV.now_obs["observation"]["head_camera"]["rgb"]
-            Image.fromarray (image).save (f"./_tmp_visual/image_{model.stage}.png")
-            break
+        if model.task_type == "Mn":
+            if sub_end_flag == 1:
+                cprint (f"[deploy] subtask end signal += 1 on [{model.iter}]", "yellow") 
+            if model.end_signal_count >= model.threshold:
+                image = TASK_ENV.now_obs["observation"]["head_camera"]["rgb"]
+                Image.fromarray (image).save (f"./_tmp_visual/image_{model.stage}.png")
+                break
         # --- The End
     
     # --- For Mn Tasks
-    if model.end_signal_count >= model.threshold:
-        model.ffmpeg.stdin.write (TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes ())
-        model._del_video_ffmpeg ()
-        cprint (f"[deploy] subtask end detected; moving to stage {model.stage + 1}, action_count {model.action_count}", "green")
-        model.update_high_observation ()
-        
-        model.end_signal_count = 0
-        model.action_count = 0
-        model.executor.memory_bank.reset ()
-        TASK_ENV.keyframes_ffmpeg.stdin.write(TASK_ENV.now_obs["third_view_rgb"].tobytes())
-         
-        model.ffmpeg.stdin.write (TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes ())
-        instruction = model.instruction
+    if model.task_type == "Mn":
+        if model.end_signal_count >= model.threshold:
+            model.ffmpeg.stdin.write (TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes ())
+            model._del_video_ffmpeg ()
+            cprint (f"[deploy] subtask end detected; moving to stage {model.stage + 1}, action_count {model.action_count}", "green")
+            model.update_high_observation ()
+            
+            model.end_signal_count = 0
+            model.action_count = 0
+            model.executor.memory_bank.reset ()
+            TASK_ENV.keyframes_ffmpeg.stdin.write(TASK_ENV.now_obs["third_view_rgb"].tobytes())
+            
+            model.ffmpeg.stdin.write (TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes ())
+            instruction = model.instruction
     # --- The End
 
 def reset_model(model: Optional[MemoryMattersAgent] = None):
