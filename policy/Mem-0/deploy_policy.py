@@ -271,11 +271,6 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
             model.instruction = model.config.get ("global_task", "")
             model._set_video_ffmpeg()
         # --- The End
-
-    if model.task_type == "Mn":
-        if TASK_ENV.subtasks[model.stage] != model.instruction:
-            cprint (f"switching to next subtask: {TASK_ENV.subtasks[model.stage]}", "yellow")
-        model.instruction = TASK_ENV.subtasks[model.stage]
         
     instruction = model.instruction
     observation["instruction"] = instruction
