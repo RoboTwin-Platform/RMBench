@@ -723,8 +723,8 @@ class MemoryBank(nn.Module):
         if sub_end_flag:
             self.end_signal_count[episode_id] += 1
             # Clear memory only when end signal count reaches threshold
-            if self.end_signal_count[episode_id] >= self.memory_accumulation:
-                self.clear_episode(episode_id)
+            # if self.end_signal_count[episode_id] >= self.memory_accumulation:
+            #     self.clear_episode(episode_id)
         
         return fused_sliding_vector, fused_anchor_vector, sub_end_flag
          

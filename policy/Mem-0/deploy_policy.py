@@ -272,6 +272,11 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
             model._set_video_ffmpeg()
         # --- The End
 
+    if model.task_type == "Mn":
+        if TASK_ENV.subtasks[model.stage] != model.instruction:
+            cprint (f"switching to next subtask: {TASK_ENV.subtasks[model.stage]}", "yellow")
+        model.instruction = TASK_ENV.subtasks[model.stage]
+        
     instruction = model.instruction
     observation["instruction"] = instruction
     encoded_obs = encode_obs(observation)
@@ -284,7 +289,9 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
         cprint("[deploy] no actions produced", "red")
         raise SystemExit("Empty actions from model; aborting eval.")
     else:
-        actions = _postprocess_action_chunk(result["normalized_actions"])
+        model.accumulate_actions_chunk(result["normalized_actions"])  # updates internal time-indexed history
+        smoothed_model_actions = model.get_smoothed_actions(model.iter, model.action_strip)
+        actions = _postprocess_action_chunk(smoothed_model_actions)
     
     model.ffmpeg.stdin.write(TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes())
     
@@ -309,6 +316,9 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
                 Image.fromarray (image).save (f"./_tmp_visual/image_{model.stage}.png")
                 break
         # --- The End
+        
+    # Advance iteration by number of executed steps
+    model.iter += steps_to_run
     
     # --- For Mn Tasks
     if model.task_type == "Mn":
@@ -321,7 +331,6 @@ def eval(TASK_ENV, model: MemoryMattersAgent, observation: dict):
             model.end_signal_count = 0
             model.action_count = 0
             model.executor.memory_bank.reset ()
-            TASK_ENV.keyframes_ffmpeg.stdin.write(TASK_ENV.now_obs["third_view_rgb"].tobytes())
             
             model.ffmpeg.stdin.write (TASK_ENV.now_obs["observation"]["head_camera"]["rgb"].tobytes ())
             instruction = model.instruction

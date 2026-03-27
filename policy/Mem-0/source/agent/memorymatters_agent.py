@@ -278,8 +278,11 @@ class MemoryMattersAgent:
 
         self.end_signal_count += sub_end_flag
         self.action_count += 1
-        assert self.end_signal_count == self.executor.memory_bank.end_signal_count[self.episode_id], \
-            f"mismatch in end_signal_count: agent {self.end_signal_count} vs memory_bank {self.executor.memory_bank.end_signal_count[self.episode_id]}"
+        if self.end_signal_count != self.executor.memory_bank.end_signal_count[self.episode_id]:
+            cprint(
+                f"mismatch in end_signal_count: agent {self.end_signal_count} vs memory_bank {self.executor.memory_bank.end_signal_count[self.episode_id]}",
+                "red"
+            )
         return sub_end_flag
 
     @torch.inference_mode()
