@@ -15,11 +15,11 @@ conda activate mem0
 pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
 pip install torchcodec --index-url https://download.pytorch.org/whl/cu124
 
-# install FlashAttention2
-pip install "flash-attn==2.6.1" --no-build-isolation
-
 # install other requirements
 pip install -r requirements.txt
+
+# install FlashAttention2
+pip install "flash-attn==2.6.1" --no-build-isolation
 
 # install ffmpeg
 conda install "ffmpeg" -c conda-forge
@@ -51,7 +51,7 @@ python scripts/hdf5_to_lerobot/Mn_dataset_to_lerobot.py
 # modify **episode_num** in the file to define the processed episode number.
 ```
 
-#### 2. Download VLM Checkpoint
+#### 2. Download VLM Checkpoints
 
 In Execution Module, Qwen3-VL-2B is used as VLM backbone. In Planning Module, Qwen3-VL-8B is used as VLM backbone. Please download the checkpoint using follow instructions.
 
@@ -60,7 +60,7 @@ cd checkpoints
 python _download.py
 ```
 
-#### 3. modify the training config
+#### 3. Modify the training config
 
 Please modify the parameters defined in ```source/config/execution_module_train.yaml``` to your own configuration. Some important parameters are listed below:
 
@@ -71,7 +71,7 @@ Please modify the parameters defined in ```source/config/execution_module_train.
 - ```trainer.train_steps```: define global training steps.
 - ```vla_dataset.RMBench.repo_id```: define your training dataset path.
 
-#### 4. start training
+#### 4. Start training
 
 In ```source/training/train_low_standalone.sh```, define your GPU index and nproc_per_node. Then run
 
@@ -229,7 +229,7 @@ llamafactory-cli export examples/merge_lora/qwen3_vl_lora_sft.yaml
 
 </details>
 
-#### 5. load the model using vLLM
+#### 5. Load the model with vLLM
 
 Finally we can get the fine-tuned model in the 'export_dir' you defined.
 
@@ -266,20 +266,27 @@ This procedure will be used for inference, we set the fine-tuned model as server
 
 First, place the trained weights in the `./checkpoints` folder.
 
-### 1. Normalization
+### 1. Environment
+
+Because Qwen requires compatibility with dependencies such as FlashAttention, the Mem-0 inference Python environment should be installed on top of the RMBench environment (some existing packages will be overwritten). In practice, simply run the RMBench environment setup commands first, and then run the Mem-0 environment setup commands.
+
+### 2. Normalization
 
 After modifying the `repo_id` related information in the `__main__` section of `dataloader/dataset_min_max.py`, run the script to generate the `norm_stats` for the corresponding dataset. The save path is `Mem-0/assets/<task_name>/norm_stats.json`.
 
 We also support other normalization methods. You just need to use the corresponding `dataloader` and then modify `NORM_WAY` in `deploy_policy.py`.
 
-### 2. Start Evaluation
+### 3. Start Evaluation
 
-Because there are some difference between M1 and Mn (such as instruction and the needness of planner .. ), you should look at `deploy_policy.py/eval` and:
+Just simply run `eval.sh`! We provide an example in `eval.sh` with the main parameters from `deploy_policy.yml` that may need to be replaced. You can quickly start the test by adjusting the parameters in `eval.sh`.
 
-- If there are M1 tasks, you should follow the in-code comment inside the `if model.is_init == 0:` block: comment out the two lines marked "For Mn Tasks" (the planner call), and instead uncomment and fill in the two lines below them to set the instruction and init the video recorder directly.
-- If there are Mn tasks, no changes are needed.
+Below are descriptions of some parameters in the `eval.sh` example:
+- `global_task`: See `data/<task_name>/demo_clean/instructions/episode0.json`.
+- `vllm_url`: Required for Mn tasks when using the planning module; this is the planning module endpoint.
+- `action_horizon`: The prefix length of the predicted action chunk that is actually executed. For Mem-0, this value can be up to 30.
 
-Now simply run `eval.sh`! We provide an example in `eval.sh` with the main parameters from `deploy_policy.yml` that may need to be replaced. You can quickly start the test by adjusting the parameters in `eval.sh`.
+Below are descriptions of some parameters that are not overridden in the `eval.sh` example:
+- `threshold`: For Mn tasks, this determines how many sub-task termination signals the classifier must output before switching to the next sub-task.
 
 ```
 bash eval.sh
