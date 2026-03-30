@@ -9,6 +9,7 @@ cd ../..  # move to project root
 
 # Example command, you can change the arguments as needed
 
+# M(1) evaluation format
 PYTHONWARNINGS=ignore::UserWarning \
 python script/eval_policy.py --config policy/${policy_name}/deploy_policy.yml --overrides \
     --task_name swap_blocks \
@@ -18,11 +19,12 @@ python script/eval_policy.py --config policy/${policy_name}/deploy_policy.yml --
     --vllm_url "http://localhost:8000" \
     --action_horizon 30 # Changeable
 
-PYTHONWARNINGS=ignore::UserWarning \
-python script/eval_policy.py --config policy/${policy_name}/deploy_policy.yml --overrides \
-    --task_name cover_blocks \
-    --execution_ckpt ./policy/Mem-0/checkpoints/model.pt \
-    --state_stats_path ./policy/Mem-0/assets/model/norm_stats.json \
-    --global_task "On the table, red, green, and blue blocks are arranged randomly along with three lids. From the current viewpoint, cover the blocks from left to right using the lids, and then uncover them again in the sequence red, green, and blue." \
-    --vllm_url "http://localhost:8000" \
-    --action_horizon 8 # Changeable
+# M(n) evaluation format
+# PYTHONWARNINGS=ignore::UserWarning \
+# python script/eval_policy.py --config policy/${policy_name}/deploy_policy.yml --overrides \
+#     --task_name cover_blocks \
+#     --execution_ckpt ./policy/Mem-0/checkpoints/model.pt \
+#     --state_stats_path ./policy/Mem-0/assets/model/norm_stats.json \
+#     --global_task "On the table, red, green, and blue blocks are arranged randomly along with three lids. From the current viewpoint, cover the blocks from left to right using the lids, and then uncover them again in the sequence red, green, and blue." \
+#     --vllm_url "http://localhost:8000" \
+#     --action_horizon 8 # Changeable
