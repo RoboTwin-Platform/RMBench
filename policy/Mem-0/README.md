@@ -270,6 +270,28 @@ First, place the trained weights in the `./checkpoints` folder.
 
 Because Qwen requires compatibility with dependencies such as FlashAttention, the Mem-0 inference Python environment should be installed on top of the RMBench environment (some existing packages will be overwritten). In practice, simply run the RMBench environment setup commands first, and then run the Mem-0 environment setup commands.
 
+i.e.
+
+```bash
+conda activate RMBench
+
+bash script/_install.sh # for RMBench, if have done, skip.
+
+# ==== Mem-0 requirements below ====
+
+pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+pip install torchcodec --index-url https://download.pytorch.org/whl/cu124
+
+# install other requirements
+pip install -r requirements.txt
+
+# install FlashAttention2
+pip install "flash-attn==2.6.1" --no-build-isolation
+
+# install ffmpeg
+conda install "ffmpeg" -c conda-forge
+```
+
 ### 2. Normalization
 
 After modifying the `repo_id` related information in the `__main__` section of `dataloader/dataset_min_max.py`, run the script to generate the `norm_stats` for the corresponding dataset. The save path is `Mem-0/assets/<task_name>/norm_stats.json`.
