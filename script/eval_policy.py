@@ -165,7 +165,9 @@ def main(usr_args):
 
     st_seed = 100000 * (1 + seed)
     suc_nums = []
-    test_num = 100
+    test_num = int(usr_args.get("test_num", 100))
+    if test_num < 1:
+        raise ValueError("test_num must be positive")
     topk = 1
 
     model = get_model(usr_args)

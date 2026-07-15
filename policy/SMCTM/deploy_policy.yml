@@ -1,0 +1,20 @@
+policy_name: SMCTM
+task_name: observe_and_pickup
+task_config: demo_clean
+ckpt_setting: smctm
+seed: 0
+instruction_type: unseen
+
+device: cuda:0
+checkpoint: ../smctm_robot_policy/outputs/dinov3_smctm/latest.pt
+dino_checkpoint: null
+execute_steps: 1
+policy_seed: 2026
+test_num: 10
+
+# The remaining environment fields are loaded from task_config/demo_clean.yml.
+camera_key: head_camera
+image_size: [224, 224]
+action_horizon: 16
+state_dim: 16
+action_dim: 16

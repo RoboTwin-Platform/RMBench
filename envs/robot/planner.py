@@ -12,6 +12,13 @@ import envs._GLOBAL_CONFIGS as CONFIGS
 
 try:
     # ********************** CuroboPlanner (optional) **********************
+    import warp as wp
+    if not hasattr(wp, "torch"):
+        from types import SimpleNamespace
+
+        wp.torch = SimpleNamespace(
+            device_from_torch=wp.device_from_torch
+        )
     from curobo.types.math import Pose as CuroboPose
     import time
     from curobo.types.robot import JointState
