@@ -1,0 +1,5 @@
+config:
+  robot: aloha_agilex
+
+observation:
+  collect_freq: 15
