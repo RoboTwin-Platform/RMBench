@@ -18,30 +18,18 @@ class battery_try(Base_Task):
         )
         self.set_dashboard_off()
 
-        self.battery1 = rand_create_sapien_urdf_obj(
+        self.battery1 = rand_create_battery(
             scene=self,
-            modelname="018_battery",
-            modelid=10128,
             xlim=[-0.2, -0.25],
             ylim=[-0.2, -0.1],
-            zlim=[0.761, 0.761],
-            rotate_rand=False,
-            qpos=[0.707, -0.707, 0, 0],
-            fix_root_link=False,
+            name="battery1",
         )
-        self.battery1.set_mass(0.01)
-        self.battery2 = rand_create_sapien_urdf_obj(
+        self.battery2 = rand_create_battery(
             scene=self,
-            modelname="018_battery",
-            modelid=10128,
             xlim=[0.2, 0.25],
             ylim=[-0.2, -0.1],
-            zlim=[0.761, 0.761],
-            rotate_rand=False,
-            qpos=[0.707, -0.707, 0, 0],
-            fix_root_link=False,
+            name="battery2",
         )
-        self.battery2.set_mass(0.01)
         self.target_pose1_p = self.battery_slot.get_pose().p + np.array([-0.02, 0.0, 0.0])
         self.target_pose2_p = self.battery_slot.get_pose().p + np.array([0.02, 0.0, 0.0])   
         self.quat_of_target_pose_0 = np.array([0.707, -0.707, 0.0, 0.0], dtype=np.float64)
@@ -83,11 +71,9 @@ class battery_try(Base_Task):
             return False
 
     def get_battery_state(self, battery_actor):
-        curr_q = battery_actor.get_pose().q
-        sim0 = abs(float(np.dot(curr_q, self.quat_of_target_pose_0))) 
-        sim180 = abs(float(np.dot(curr_q, self.quat_of_target_pose_1))) 
-        state = 0 if sim0 >= sim180 else 1
-        return state
+        # Local +Z is the positive cap. Target poses map it to +Y (state 0) or -Y (state 1).
+        axis = battery_actor.get_pose().to_transformation_matrix()[:3, 2]
+        return 0 if axis[1] >= 0.0 else 1
         
     def check_battery_in_slot(self, battery_actor, target_pose_p):
         curr_p = battery_actor.get_pose().p

@@ -1,6 +1,7 @@
 import sapien.core as sapien
 import numpy as np
 from pathlib import Path
+from copy import deepcopy
 import transforms3d as t3d
 import sapien.physx as sapienp
 import json
@@ -297,6 +298,73 @@ def create_cylinder(
     # in general, entity should only be added to scene after it is fully built
     scene.add_entity(entity)
     return entity
+
+
+# AA-style battery as a single rigid body. Visual stays a cylinder; collision is
+# the bounding box so a side-lying cell cannot roll forever on the table.
+BATTERY_RADIUS = 0.02
+BATTERY_HALF_LENGTH = 0.0275
+BATTERY_MASS = 0.025
+BATTERY_BODY_COLOR = [0.20, 0.55, 0.95, 1.0]
+BATTERY_CAP_COLOR = [0.75, 0.75, 0.78, 1.0]
+# SAPIEN cylinders extend along +X; rotate onto +Z to match the original URDF frame.
+_BATTERY_CYLINDER_TO_Z = t3d.euler.euler2quat(0.0, np.pi / 2.0, 0.0)
+BATTERY_MODEL_DATA = {
+    "scale": 1.0,
+    "contact_points_pose": [
+        [[-1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        [[1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, 0.0], [0.0, 0.0, -1.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+    ],
+    "functional_matrix": [
+        [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+    ],
+}
+
+
+def create_battery(scene, pose: sapien.Pose, name="018_battery") -> Actor:
+    scene, pose = preprocess(scene, pose)
+
+    entity = sapien.Entity()
+    entity.set_name(name)
+    entity.set_pose(pose)
+
+    friction = scene.create_physical_material(1.2, 1.0, 0.0)
+    half_size = [BATTERY_RADIUS, BATTERY_RADIUS, BATTERY_HALF_LENGTH]
+    rigid = sapien.physx.PhysxRigidDynamicComponent()
+    rigid.attach(sapien.physx.PhysxCollisionShapeBox(half_size=half_size, material=friction))
+    rigid.linear_damping = 0.05
+    rigid.angular_damping = 0.4
+
+    body_mat = sapien.render.RenderMaterial(base_color=BATTERY_BODY_COLOR)
+    cap_mat = sapien.render.RenderMaterial(base_color=BATTERY_CAP_COLOR)
+    render = sapien.render.RenderBodyComponent()
+    body = sapien.render.RenderShapeCylinder(radius=BATTERY_RADIUS, half_length=0.025, material=body_mat)
+    body.local_pose = sapien.Pose(q=_BATTERY_CYLINDER_TO_Z)
+    pos_cap = sapien.render.RenderShapeCylinder(radius=0.01, half_length=0.002, material=cap_mat)
+    pos_cap.local_pose = sapien.Pose(p=[0.0, 0.0, 0.026], q=_BATTERY_CYLINDER_TO_Z)
+    neg_cap = sapien.render.RenderShapeCylinder(radius=0.01, half_length=0.001, material=cap_mat)
+    neg_cap.local_pose = sapien.Pose(p=[0.0, 0.0, -0.026], q=_BATTERY_CYLINDER_TO_Z)
+    render.attach(body)
+    render.attach(pos_cap)
+    render.attach(neg_cap)
+
+    entity.add_component(rigid)
+    entity.add_component(render)
+    entity.set_pose(pose)
+    scene.add_entity(entity)
+    actor = Actor(entity, deepcopy(BATTERY_MODEL_DATA), mass=BATTERY_MASS)
+    hx, hy, hz = (2.0 * BATTERY_RADIUS, 2.0 * BATTERY_RADIUS, 2.0 * BATTERY_HALF_LENGTH)
+    for component in entity.get_components():
+        if isinstance(component, sapien.physx.PhysxRigidDynamicComponent):
+            component.inertia = np.array(
+                [
+                    BATTERY_MASS / 12.0 * (hy * hy + hz * hz),
+                    BATTERY_MASS / 12.0 * (hx * hx + hz * hz),
+                    BATTERY_MASS / 12.0 * (hx * hx + hy * hy),
+                ],
+                dtype=np.float32,
+            )
+    return actor
 
 
 # create box

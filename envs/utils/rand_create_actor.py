@@ -180,6 +180,29 @@ def rand_create_sapien_urdf_obj(
     )
 
 
+def rand_create_battery(
+    scene,
+    xlim: np.ndarray,
+    ylim: np.ndarray,
+    zlim: np.ndarray = [0.76, 0.76],
+    ylim_prop=False,
+    rotate_rand=False,
+    rotate_lim=[0, 0, 0],
+    qpos=[0.707, -0.707, 0, 0],
+    name="018_battery",
+) -> Actor:
+    obj_pose = rand_pose(
+        xlim=xlim,
+        ylim=ylim,
+        zlim=zlim,
+        ylim_prop=ylim_prop,
+        rotate_rand=rotate_rand,
+        rotate_lim=rotate_lim,
+        qpos=qpos,
+    )
+    return create_battery(scene=scene, pose=obj_pose, name=name)
+
+
 def rand_create_actor(
         scene,
         modelname: str,
