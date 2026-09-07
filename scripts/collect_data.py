@@ -10,13 +10,51 @@ from envs import *
 import yaml
 import importlib
 import json
+import re
 import traceback
 import os
 import time
 from argparse import ArgumentParser
 
+from description.utils.generate_episode_instructions import generate_episode_descriptions
+
 current_file_path = os.path.abspath(__file__)
 parent_directory = os.path.dirname(current_file_path)
+
+
+def build_episode_instructions(args, episode_info, episode_idx):
+    fallback = args["task_name"].replace("_", " ")
+    info = episode_info.get("info", {}) if isinstance(episode_info, dict) else {}
+    generated = generate_episode_descriptions(
+        args["task_name"], [info], int(args.get("language_num") or 100)
+    )
+    if generated:
+        episode_descriptions = generated[0]
+    else:
+        episode_descriptions = {"seen": [], "unseen": []}
+
+    episode_descriptions["episode_index"] = episode_idx
+    for split in ("seen", "unseen"):
+        if not episode_descriptions.get(split):
+            episode_descriptions[split] = [fallback]
+
+    instruction_dir = os.path.join(args["save_path"], "instruction")
+    os.makedirs(instruction_dir, exist_ok=True)
+    with open(
+        os.path.join(instruction_dir, f"episode_{episode_idx:07d}.json"),
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            {
+                "seen": episode_descriptions["seen"],
+                "unseen": episode_descriptions["unseen"],
+            },
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
+    return episode_descriptions
 
 
 def class_decorator(task_name):
@@ -39,7 +77,7 @@ def get_embodiment_config(robot_file):
 def main(task_name=None, task_config=None):
 
     task = class_decorator(task_name)
-    config_path = f"./task_config/{task_config}.yml"
+    config_path = os.path.join(CONFIGS_PATH, f"{task_config}.yml")
 
     with open(config_path, "r", encoding="utf-8") as f:
         args = yaml.load(f.read(), Loader=yaml.FullLoader)
@@ -99,7 +137,15 @@ def main(task_name=None, task_config=None):
 
     args["embodiment_name"] = embodiment_name
     args['task_config'] = task_config
-    args["save_path"] = os.path.join(args["save_path"], str(args["task_name"]), args["task_config"])
+    # Directory name follows the embodiment, e.g. aloha-agilex -> aloha_agilex,
+    # ARX-X5 -> arx_x5, mixed dual-arm a+b -> a_b.
+    embodiment_dir = re.sub(r"[^A-Za-z0-9_]+", "_", embodiment_name).lower()
+    args["save_path"] = os.path.join(
+        args["save_path"],
+        args["task_config"],
+        str(args["task_name"]),
+        embodiment_dir,
+    )
     run(task, args)
 
 
@@ -193,13 +239,13 @@ def run(TASK_ENV, args):
         st_idx = 0
 
         def exist_hdf5(idx):
-            file_path = os.path.join(args["save_path"], 'data', f'episode{idx}.hdf5')
+            file_path = os.path.join(
+                args["save_path"], "data", f"episode_{idx:07d}.hdf5"
+            )
             return os.path.exists(file_path)
 
         while exist_hdf5(st_idx):
             st_idx += 1
-
-        language_annotation_json_path = os.path.join(args["save_path"], 'language_annotation.json')
 
         for episode_idx in range(st_idx, args["episode_num"]):
             print(f"\033[34mTask name: {args['task_name']}\033[0m")
@@ -225,24 +271,25 @@ def run(TASK_ENV, args):
 
             with open(info_file_path, "w", encoding="utf-8") as file:
                 json.dump(info_db, file, ensure_ascii=False, indent=4)
-            
-            # language annotation
+
+            episode_descriptions = build_episode_instructions(args, info, episode_idx)
+
+            language_annotation_json_path = os.path.join(args["save_path"], "language_annotation.json")
             if not os.path.exists(language_annotation_json_path):
                 with open(language_annotation_json_path, "w", encoding="utf-8") as file:
                     json.dump({}, file, ensure_ascii=False)
             with open(language_annotation_json_path, "r", encoding="utf-8") as file:
                 language_annotation = json.load(file)
-            language_annotation[f'episode_{episode_idx}'] = TASK_ENV.language_annotation
+            language_annotation[f"episode_{episode_idx}"] = TASK_ENV.language_annotation
             with open(language_annotation_json_path, "w", encoding="utf-8") as file:
                 json.dump(language_annotation, file, ensure_ascii=False, indent=4)
 
             TASK_ENV.close_env(clear_cache=((episode_idx + 1) % clear_cache_freq == 0))
-            TASK_ENV.merge_pkl_to_hdf5_video()
+            TASK_ENV.merge_pkl_to_hdf5_video(
+                instructions=episode_descriptions["seen"],
+            )
             TASK_ENV.remove_data_cache()
             assert TASK_ENV.check_success(), "Collect Error"
-
-        command = f"cd description && bash gen_episode_instructions.sh {args['task_name']} {args['task_config']} {args['language_num']}"
-        os.system(command)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ RMBench: Memory-Dependent Robotic Manipulation Benchmark with Insights into Poli
 
 # 📰 Updates
 
+**2026.09.05** — Switch policy serving, evaluation, and newly collected trajectories to the shared [XPolicyLab](https://github.com/XPolicyLab/XPolicyLab) stack used by RoboTwin 2.0.
+
 **2026.07.14** — Since the previously trained Mem-0 checkpoints were not backed up before our development machine was recycled, we have re-organized the training and now publicly release the retrained model weights:
 
 - **M(1) tasks**: due to limited computational resources, all M1 tasks were trained jointly into a single multi-task `m1_mix` model. The complete model, the processed `m1_mix` dataset, training/inference configs, and all evaluation logs and videos are available at [qiuly/Mem-0-m1mix-RMBench](https://huggingface.co/qiuly/Mem-0-m1mix-RMBench) and [qiuly/Mem-0-m1mix-dataset-RMBench](https://huggingface.co/datasets/qiuly/Mem-0-m1mix-dataset-RMBench).
@@ -15,7 +17,9 @@ Detailed evaluation results can be found in the Hugging Face model cards above.
 
 # 🧑🏻‍💻 RMBench Usage
 
-> This project is built upon [RoboTwin 2.0](https://github.com/robotwin-Platform/RoboTwin), and you can seamlessly transfer your policy code between the two projects.
+> This project is built upon [RoboTwin 2.0](https://github.com/robotwin-Platform/RoboTwin). Policy training and evaluation now go through [XPolicyLab](https://github.com/XPolicyLab/XPolicyLab), the same serving stack as RoboTwin.
+
+Existing clones need a one-time layout update: `script/` is now `scripts/`, and `task_config/` is now `env_cfg/task_config/`. Evaluation goes through the `XPolicyLab` submodule. Keep the environment variable names `ROBOTWIN_EVAL_ARGS_FILE` and `ROBOTWIN_SUPPRESS_EVAL_CONFIG` — XPolicyLab client scripts still read those names. The in-repo `policy/` tree is still present and will be removed in a follow-up.
 
 ## 1. Installation
 First, prepare a conda environment.
@@ -25,32 +29,63 @@ conda create -n RMBench python=3.10 -y
 conda activate RMBench
 ```
 
-RMBench Repo: https://github.com/RoboTwin-Platform/RMBench
+Clone recursively so the XPolicyLab submodule is present:
 
 ```
-git clone https://github.com/RoboTwin-Platform/RMBench.git
+git clone --recurse-submodules https://github.com/RoboTwin-Platform/RMBench.git
+cd RMBench
 ```
 
-Then, run `script/_install.sh` to install basic conda envs and CuRobo:
+For an existing checkout:
 
 ```
-bash script/_install.sh
+git submodule update --init --recursive XPolicyLab
+```
+
+Then install the simulator environment, CuRobo, and the editable XPolicyLab package:
+
+```
+bash scripts/_install.sh
+```
+
+To refresh the XPolicyLab pin:
+
+```
+bash scripts/update_xpolicylab.sh
+bash scripts/update_xpolicylab.sh --stage --install
 ```
 
 ## 2. Download Assets
 To download the assets, run the following command. If you encounter any rate-limit issues, please log in to your Hugging Face account by running `huggingface-cli login`:
 
 ```
-bash script/_download_assets.sh
+bash scripts/_download_assets.sh
 ```
 
 ## 3. Download Data
 
-Please run the following command to download all data.
+The currently published Hugging Face dump still uses the previous RoboTwin-style layout (`data/<task>/demo_clean/...`):
 
 ```
-bash script/_download_data.sh
+bash scripts/_download_data.sh
 ```
+
+Newly collected demonstrations are written in XPolicyLab trajectory format:
+
+```text
+data/<task_config>/<task_name>/<embodiment>/data/episode_0000000.hdf5
+```
+
+`<embodiment>` follows the `embodiment` field of the task config (`aloha_agilex` for the default `aloha-agilex` setup).
+
+> **Decode images only through `decode_image_bit`.** XPolicyLab-format cameras are encoded image bits, not a stable JPEG you can pass to `cv2.imdecode` / PIL. Prefer:
+>
+> ```python
+> from XPolicyLab.utils.process_data import decode_image_bit
+> rgb = decode_image_bit(image_bits)  # RGB
+> ```
+>
+> A local copy lives in [`data/decode_image_bit.py`](data/decode_image_bit.py). Do **not** add `cv2.cvtColor(..., COLOR_BGR2RGB)` after it.
 
 <details>
 <summary>If you need to collect the data (we actually recommend downloading it directly)</summary>
@@ -59,23 +94,65 @@ bash script/_download_data.sh
 
 Running the following command will first search for a random seed for the target collection quantity, and then replay the seed to collect data.
 
-Please strictly follow our tutorial in [RoboTwin 2.0 Doc - Collect Data](https://robotwin-platform.github.io/doc/usage/collect-data.html).
-
 ```
 bash collect_data.sh ${task_name} ${task_config} ${gpu_id}
 # Example: bash collect_data.sh cover_blocks demo_clean 0
 ```
 </details>
 
-## 4. Run Policies
+## 4. Convert to LeRobot (Optional)
 
-1. Mem-0 (ours): [See Mem-0 Document](./policy/Mem-0/README.md)
-2. DP: [See DP Document](https://robotwin-platform.github.io/doc/usage/DP.html)
-3. ACT: [See ACT Document](https://robotwin-platform.github.io/doc/usage/ACT.html)
-4. Pi 0.5: [See Pi 0.5 Document](https://robotwin-platform.github.io/doc/usage/Pi05.html)
-5. X-VLA: [See X-VLA Document](./policy/X-VLA/README.md)
-6. Other Policies (Pi0, RDT, etc): [See Document](https://robotwin-platform.github.io/doc/usage) and [See Folder](./policy/)
-6. **Configure your policy:** [See Tutorial Here](https://robotwin-platform.github.io/doc/usage/deploy-your-policy.html)
+Many XPolicyLab policies train on LeRobot datasets. After you have XPolicyLab-format HDF5 under `data/<task_config>/<task>/<embodiment>/data/`, convert with the shared scripts in `XPolicyLab/scripts/`. Those scripts already decode through `decode_image_bit`.
+
+```bash
+export HF_LEROBOT_HOME=/path/with/enough/space/lerobot
+
+python XPolicyLab/scripts/transform_lerobot_v21_format.py \
+  "demo_clean.cover_blocks.aloha_agilex" \
+  --repo_id cover_blocks_demo_clean \
+  --max_episode 50
+```
+
+Keep `--data_type` as the default `RoboDojo` — RMBench XPolicyLab trajectories share that HDF5 layout.
+
+## 5. Evaluate Policies via XPolicyLab
+
+All evaluation goes through `scripts/eval_policy.sh`. The policy adapter must exist under `XPolicyLab/policy/<policy_name>/` (see the [XPolicyLab policy catalog](https://github.com/XPolicyLab/XPolicyLab/tree/main/policy)). Mem-0 is `Mem_0`.
+
+`--env-cfg-type` selects the XPolicyLab action profile (`arx_x5` matches RMBench's default aloha-agilex layout). Task settings live in `env_cfg/task_config/`.
+
+**Local evaluation (multi-task, multi-GPU):**
+
+```bash
+bash scripts/eval_policy.sh multitask \
+  --config env_cfg/eval/all_tasks.yml \
+  --policy-name Mem_0 \
+  --ckpt-name <checkpoint> \
+  --env-cfg-type arx_x5 \
+  --policy-conda-env <policy_env> \
+  --eval-env-conda-env RMBench \
+  --action-type joint
+```
+
+Add `--dry-run` to validate the schedule without launching anything.
+
+XPolicyLab `Mem_0` classifies tasks with `XPolicyLab/policy/Mem_0/Mem_0/xpolicylab_adapter/task_config.json`. Names missing from that file default to **M1**. `battery_try`, `blocks_ranking_try`, and `press_button` are Mn-style RMBench tasks but are not listed under `Mn` in the current pin; patch that JSON (or pass planner GPUs / `VLLM_URL`) before expecting Mn planning.
+
+**Split deployment (remote policy server + local simulator):**
+
+```bash
+# On the policy-server host:
+bash scripts/eval_policy.sh serve --config env_cfg/eval/remote_server.yml
+
+# On the simulator host:
+bash scripts/eval_policy.sh multitask \
+  --config env_cfg/eval/all_tasks.yml \
+  --policy-name Mem_0 \
+  --env-cfg-type arx_x5 \
+  --eval-env-conda-env RMBench \
+  --enable-remote \
+  --policy-server-ip <server_ip> --policy-server-port <port>
+```
 
 # 👍 Citations
 

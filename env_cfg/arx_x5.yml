@@ -1,0 +1,5 @@
+config:
+  robot: dual_x5
+
+observation:
+  collect_freq: 25

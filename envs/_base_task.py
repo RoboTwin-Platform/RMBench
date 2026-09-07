@@ -168,6 +168,25 @@ class Base_Task(gym.Env):
         actors_list, actors_pose_list = [], []
         for actor in self.scene.get_all_actors():
             actors_list.append(actor)
+        if hasattr(self.scene, "get_all_articulations"):
+            robot_arts = set()
+            for attr in ("left_entity", "right_entity"):
+                art = getattr(getattr(self, "robot", None), attr, None)
+                if art is not None:
+                    robot_arts.add(art)
+            for art in self.scene.get_all_articulations():
+                if art not in robot_arts:
+                    actors_list.append(art)
+
+        def _actor_pose(actor):
+            if hasattr(actor, "get_pose"):
+                return actor.get_pose()
+            return actor.get_root_pose()
+
+        def _actor_name(actor):
+            if hasattr(actor, "get_name"):
+                return actor.get_name()
+            return getattr(actor, "name", "articulation")
 
         def get_sim(p1, p2):
             return np.abs(cal_quat_dis(p1.q, p2.q) * 180)
@@ -179,21 +198,21 @@ class Base_Task(gym.Env):
             for _ in range(times):
                 self.scene.step()
                 for idx, actor in enumerate(actors_list):
-                    actors_pose_list[idx].append(actor.get_pose())
+                    actors_pose_list[idx].append(_actor_pose(actor))
 
             for idx, actor in enumerate(actors_list):
                 final_pose = actors_pose_list[idx][-1]
                 for pose in actors_pose_list[idx][-200:]:
                     if get_sim(final_pose, pose) > 3.0:
                         is_stable = False
-                        unstable_list.append(actor.get_name())
+                        unstable_list.append(_actor_name(actor))
                         break
 
         is_stable = True
         for _ in range(2000):
             self.scene.step()
         for idx, actor in enumerate(actors_list):
-            actors_pose_list.append([actor.get_pose()])
+            actors_pose_list.append([_actor_pose(actor)])
         check(500)
         return is_stable, unstable_list
 
@@ -558,16 +577,22 @@ class Base_Task(gym.Env):
             traj_data = pickle.load(f)
         return traj_data
 
-    def merge_pkl_to_hdf5_video(self):
+    def merge_pkl_to_hdf5_video(self, instructions=None):
         if not self.save_data:
             return
         cache_path = self.folder_path["cache"]
-        target_file_path = f"{self.save_dir}/data/episode{self.ep_num}.hdf5"
-        target_video_path = f"{self.save_dir}/video/episode{self.ep_num}.mp4"
-        # print('Merging pkl to hdf5: ', cache_path, ' -> ', target_file_path)
+        episode_name = f"episode_{self.ep_num:07d}"
+        target_file_path = f"{self.save_dir}/data/{episode_name}.hdf5"
+        target_video_path = f"{self.save_dir}/video/{episode_name}.mp4"
 
         os.makedirs(f"{self.save_dir}/data", exist_ok=True)
-        process_folder_to_hdf5_video(cache_path, target_file_path, target_video_path)
+        process_folder_to_hdf5_video(
+            cache_path,
+            target_file_path,
+            target_video_path,
+            instructions=instructions,
+            frequency=int(self.save_freq or 15),
+        )
 
     def remove_data_cache(self):
         folder_path = self.folder_path["cache"]

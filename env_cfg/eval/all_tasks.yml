@@ -1,0 +1,19 @@
+# Local policy-server and simulator evaluation for every RMBench task.
+gpu_ids: "0-7"
+jobs_per_gpu: 1
+num_workers: 1
+enable_remote: false
+policy_server_ip: 127.0.0.1
+policy_server_port: [18080, 18081, 18082, 18083]
+
+tasks:
+  - battery_try
+  - blocks_ranking_try
+  - cover_blocks
+  - observe_and_pickup
+  - place_block_mat
+  - press_button
+  - put_back_block
+  - rearrange_blocks
+  - swap_T
+  - swap_blocks

@@ -138,7 +138,14 @@ def load_task_instructions(task_name: str) -> Dict[str, Any]:
 
 def load_scene_info(task_name: str, setting: str, scene_info_path: str) -> Dict[str, Dict]:
     """Load the scene info from the JSON file in the data directory."""
-    file_path = os.path.join(parent_directory, f"../../{scene_info_path}/{task_name}/{setting}/scene_info.json")
+    file_path = os.path.join(
+        parent_directory,
+        f"../../{scene_info_path}/{setting}/{task_name}/aloha_agilex/scene_info.json",
+    )
+    if not os.path.exists(file_path):
+        file_path = os.path.join(
+            parent_directory, f"../../{scene_info_path}/{task_name}/{setting}/scene_info.json"
+        )
     try:
         with open(file_path, "r") as f:
             scene_data = json.load(f)
@@ -164,12 +171,14 @@ def extract_episodes_from_scene_info(scene_info: Dict) -> List[Dict[str, str]]:
 
 def save_episode_descriptions(task_name: str, setting: str, generated_descriptions: List[Dict]):
     """Save generated descriptions to output files."""
-    output_dir = os.path.join(parent_directory, f"../../data/{task_name}/{setting}/instructions")
+    output_dir = os.path.join(
+        parent_directory, f"../../data/{setting}/{task_name}/aloha_agilex/instruction"
+    )
     os.makedirs(output_dir, exist_ok=True)
 
     for episode_desc in generated_descriptions:
         episode_index = episode_desc["episode_index"]
-        output_file = os.path.join(output_dir, f"episode{episode_index}.json")
+        output_file = os.path.join(output_dir, f"episode_{episode_index:07d}.json")
 
         with open(output_file, "w") as f:
             json.dump(
@@ -258,7 +267,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     setting_file = os.path.join(
-        parent_directory, f"../../task_config/{args.setting}.yml"
+        parent_directory, f"../../env_cfg/task_config/{args.setting}.yml"
     )
     with open(setting_file, "r", encoding="utf-8") as f:
         args_dict = yaml.load(f.read(), Loader=yaml.FullLoader)
