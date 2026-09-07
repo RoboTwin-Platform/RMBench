@@ -126,26 +126,6 @@ class swap_blocks(Base_Task):
         if qpos[idx] > threshold:
             setattr(self, flag_attr, False)
 
-    def check_button_pressed(self, button_actor, joint_name="button_joint", threshold=-0.005): 
-        art = button_actor.actor if hasattr(button_actor, "actor") else button_actor   
-        joints = art.get_active_joints()   
-        joint_names = [j.get_name() for j in joints]    
-        idx = joint_names.index(joint_name) 
-        qpos = art.get_qpos()
-        if qpos[idx] < threshold:
-            return True
-        else:
-            return False
-        
-    def update_button_reset(self, button_actor, flag_attr, joint_name="button_joint", threshold=-0.001):
-        art = button_actor.actor if hasattr(button_actor, "actor") else button_actor
-        joints = art.get_active_joints()
-        joint_names = [j.get_name() for j in joints]
-        idx = joint_names.index(joint_name)
-
-        qpos = art.get_qpos()
-        if qpos[idx] > threshold:
-            setattr(self, flag_attr, False)
 
     def update_press_success(self, button_actor, flag_attr, cnt_attr):
         if self.check_button_pressed(button_actor) and not getattr(self, flag_attr):

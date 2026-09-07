@@ -16,6 +16,7 @@ PyYAML>=6
 zarr
 openai
 huggingface_hub==0.25.0
+tqdm==4.69.1
 h5py>=3.8
 websockets>=13.0
 msgpack>=1.0.8

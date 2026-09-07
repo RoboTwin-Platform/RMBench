@@ -121,17 +121,6 @@ class press_button(Base_Task):
         if qpos[idx] > threshold:
             setattr(self, flag_attr, False)
 
-    def check_button_pressed(self, button_actor, joint_name="button_joint", threshold=-0.005): 
-        art = button_actor.actor if hasattr(button_actor, "actor") else button_actor   
-        joints = art.get_active_joints()   
-        joint_names = [j.get_name() for j in joints]    
-        idx = joint_names.index(joint_name) 
-        qpos = art.get_qpos()
-        if qpos[idx] < threshold:
-            return True
-        else:
-            return False
-
     def update_press_success(self, button_actor, flag_attr, cnt_attr):
         if self.check_button_pressed(button_actor) and not getattr(self, flag_attr):
             setattr(self, flag_attr, True)
@@ -196,7 +185,7 @@ class press_button(Base_Task):
         # reset buttons
         self.set_button_unpressed(self.button1, target=min(0.0, self.get_current_button_value("button", self.button1)+0.002))
         self.set_button_unpressed(self.button2, target=min(0.0, self.get_current_button_value("button", self.button2)+0.002))
-        self.set_button_unpressed(self.check_button, target=min(0.0, self.get_current_button_value("button", self.button1)+0.002))
+        self.set_button_unpressed(self.check_button, target=min(0.0, self.get_current_button_value("button", self.check_button)+0.002))
 
         return self.press_cnt_1 == self.card_id_1 and self.press_cnt_2 == self.card_id_2 and self.press_flag_check_button
         

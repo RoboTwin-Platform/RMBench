@@ -16,6 +16,11 @@ class battery_try(Base_Task):
             qpos=[0.707, 0 , 0, 0.707],
             fix_root_link=True,
         )
+        self.battery_slot_base_name = "battery_slot_base"
+        for link in self.battery_slot.actor.get_links():
+            if link.get_name() == "base_link":
+                link.entity.set_name(self.battery_slot_base_name)
+                break
         self.set_dashboard_off()
 
         self.battery1 = rand_create_battery(
@@ -157,7 +162,10 @@ class battery_try(Base_Task):
         if current_combination == self.correct_combination:
             self.set_dashboard_on()
         if self.check_battery_in_slot(self.battery1, self.target_pose1_p) and self.check_battery_in_slot(self.battery2, self.target_pose2_p) \
-            and current_combination == self.correct_combination and self.check_dashboard_on():
+            and current_combination == self.correct_combination and self.check_dashboard_on() \
+            and self.check_actors_contact(self.battery1.get_name(), self.battery_slot_base_name) \
+            and self.check_actors_contact(self.battery2.get_name(), self.battery_slot_base_name) \
+            and self.is_left_gripper_open() and self.is_right_gripper_open():
             return True
         else:
             return False
